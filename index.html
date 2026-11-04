@@ -125,6 +125,22 @@ svg.anim .phase{fill:var(--muted);font:600 11px var(--f-body);letter-spacing:.06
 svg.anim .phase.eff{fill:var(--accent)}
 .vid{align-self:center;font-weight:600;font-size:14px;color:var(--accent);text-decoration:none;padding:6px 10px;border-radius:999px}
 .vid:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 60%,transparent)}
+.media{position:relative;background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;aspect-ratio:4/3;max-width:100%}
+.media img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.media .fb{opacity:0}
+.mphase{position:absolute;left:10px;bottom:10px;background:rgba(255,255,255,.9);color:#4b5560;border-radius:999px;padding:5px 10px;font:600 11px var(--f-body);letter-spacing:.06em;text-transform:uppercase}
+.mphase.eff{color:#C93A28}
+.mpause{position:absolute;right:10px;bottom:10px;width:44px;height:44px;border-radius:50%;border:0;background:#14181D;color:#fff;font:700 14px var(--f-body);cursor:pointer}
+.note{position:relative;display:block}
+.note input{text-align:left;font:500 16px var(--f-body);padding:12px 40px 12px 14px;border-radius:12px}
+.note span{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--muted)}
+.info{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;margin:0;font-size:15px}
+.info dt{font:700 12px/1.6 var(--f-body);letter-spacing:.05em;text-transform:uppercase;color:var(--ink);white-space:nowrap}
+.info dd{margin:0;min-width:0}
+@media (max-width:380px){.info{grid-template-columns:1fr;gap:2px}.info dd{margin-bottom:8px}}
+.seg{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line)}
+.seg button{appearance:none;border:0;background:none;padding:12px 4px;font:700 14px var(--f-body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent}
+.seg button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
 .empty{padding:18px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}
 .guide p{margin:0 0 8px}
 .guide ul{margin:0 0 8px;padding-left:20px;display:flex;flex-direction:column;gap:4px}
@@ -205,6 +221,7 @@ const W = {
  A:{title:"Ноги, спина, грудь, плечи",items:["warmup","leg_press","lat_pulldown","chest_press","leg_curl","lateral_raise","plank","cooldown"]},
  B:{title:"Присед, спина, грудь, руки",items:["warmup","goblet_squat","seated_row","incline_db_press","leg_extension","biceps_curl","triceps_pushdown","hyperextension","cooldown"]},
 };
+for (const k in EX) EX[k].id = k;
 const BEGINNER = 4;
 const DAYS = ["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
 
@@ -284,7 +301,7 @@ function rec(ex, last){
     if (Math.min(...last.sets.map(s=>s.r)) >= ex.hi) return {w:0, kind:"up", text:`Держишь ${ex.hi} сек уверенно. Пора усложнить: <b>подними одну ногу</b>.`};
     return {w:0, kind:"up", text:`Цель сегодня: <b>${Math.min(mx+5, ex.hi)} сек</b> хотя бы в первом подходе.`};
   }
-  if (!last) return {w:null, kind:"", text:`Первый раз, стартовый вес: <b>${ex.start}</b>. Правильный вес — последние 2 повтора даются тяжело, но техника чистая.`};
+  if (!last){ const m = META[ex.id] || {}; return {w:m.w ?? null, kind:"", text:`Первый раз: начни с <b>${m.w===0?"без веса (0)":fmt(m.w)+" кг"}</b>${m.wn?` (${m.wn})`:""}. Если сделал все повторы легко и мог ещё 4+ — в следующем подходе добавь. Правильный вес: последние 2 повтора даются тяжело, но техника чистая.`}; }
   const w = Math.max(...last.sets.map(s=>s.w)), reps = last.sets.map(s=>s.r);
   if (reps.length >= Math.min(2, sets) && Math.min(...reps) >= ex.hi){
     const nw = w + ex.step;
@@ -341,7 +358,7 @@ function go(delta){
   stopTimer();
   const a = S.active, n = W[a.w].items.length;
   a.idx += delta;
-  confirmStop = false;
+  confirmStop = false; wTab = "sets";
   if (a.idx >= n){ finish(); return; }
   if (a.idx < 0) a.idx = 0;
   save(); render(); scrollTo(0,0);
@@ -479,24 +496,22 @@ function renderWorkout(){
     const rows = l.sets.map((s,i)=> isT
       ? `<div class="set time ${s.done?"done":""}"><span class="n">${i+1}</span><label><input id="r-${id}-${i}" type="number" inputmode="numeric" min="1" max="600" data-set="${i}" data-f="r" value="${s.r}" placeholder="${ex.lo}" aria-label="Подход ${i+1}, секунды"><span>сек</span></label><button class="check" data-act="check" data-v="${i}" aria-label="Подход ${i+1} сделан">✓</button></div>`
       : `<div class="set ${s.done?"done":""}"><span class="n">${i+1}</span><label><input id="w-${id}-${i}" type="number" inputmode="decimal" step="0.5" min="0" max="500" data-set="${i}" data-f="w" value="${s.w}" placeholder="кг" aria-label="Подход ${i+1}, вес"><span>кг</span></label><label><input id="r-${id}-${i}" type="number" inputmode="numeric" min="1" max="100" data-set="${i}" data-f="r" value="${s.r}" placeholder="${ex.hi}" aria-label="Подход ${i+1}, повторы"><span>раз</span></label><button class="check" data-act="check" data-v="${i}" aria-label="Подход ${i+1} сделан">✓</button></div>`).join("");
-    main = `<section class="card">
-      <div class="label">Шаг ${a.idx+1} из ${items.length} · ${ex.muscles}</div>
-      <h2 class="exname">${ex.name}</h2>
-      ${animBox(id, ex)}
-      <div class="target"><span class="pill">${setsFor(ex)} × ${ex.lo}–${ex.hi} ${isT?"сек":"повторов"}</span><span class="pill">отдых ${ex.rest} с</span>${ex.dumb?`<span class="pill">вес одной гантели</span>`:""}</div>
-      <div class="muted" style="font-size:14px">Прошлый раз: <span class="num" style="color:var(--ink)">${last?resultText(ex,last):"ещё не делал"}</span></div>
+    const tabsBar = `<div class="seg" role="tablist"><button role="tab" data-act="wtab" data-v="sets" aria-selected="${wTab==="sets"}">Подходы</button><button role="tab" data-act="wtab" data-v="tech" aria-selected="${wTab==="tech"}">Техника</button></div>`;
+    const setsPane = `
       <div class="tip ${r.kind}">${r.text}</div>
+      <div class="muted" style="font-size:14px">Прошлый раз: <span class="num" style="color:var(--ink)">${last?resultText(ex,last):"ещё не делал"}</span></div>
       <div class="sethead ${isT?"time":""}"><span>#</span>${isT?"<span>секунды</span>":"<span>вес</span><span>повторы</span>"}<span>готово</span></div>
       <div class="sets">${rows}</div>
       <button class="btn ghost" data-act="addset" style="min-height:40px;padding:8px">+ ещё подход</button>
-      <p class="muted" style="margin:0;font-size:13px">Сделал подход — нажми ✓, запустится таймер отдыха. Пустые повторы = ${isT?ex.lo+" сек":ex.hi+" раз"}.</p>
-      <details class="tech"><summary>Как делать и настроить тренажёр</summary>
-        <p style="margin-top:6px">${ex.machine}</p>
-        <h4>Настройка</h4><ul>${ex.setup.map(x=>`<li>${x}</li>`).join("")}</ul>
-        <h4>Техника</h4><ul>${ex.technique.map(x=>`<li>${x}</li>`).join("")}</ul>
-        <h4>Частые ошибки</h4><ul>${ex.mistakes.map(x=>`<li>${x}</li>`).join("")}</ul>
-        <p class="muted" style="margin-top:10px;font-size:14px">Не нашёл тренажёр или не понял настройку — спроси дежурного тренера X-FIT, это бесплатно.</p>
-      </details>
+      <p class="muted" style="margin:0;font-size:13px">Сделал подход — нажми ✓, запустится таймер отдыха. Пустые повторы = ${isT?ex.lo+" сек":ex.hi+" раз"}.</p>`;
+    main = `<section class="card">
+      <div class="label">Шаг ${a.idx+1} из ${items.length}</div>
+      ${mediaBox(id, ex)}
+      <h2 class="exname">${ex.name}</h2>
+      ${noteField(id)}
+      ${infoRows(id, ex)}
+      ${tabsBar}
+      ${wTab==="sets" ? setsPane : techPane(ex)}
     </section>`;
   }
   const isLast = a.idx === items.length-1;
@@ -511,6 +526,63 @@ function renderWorkout(){
     <button class="btn" data-act="skip">${ex.type==="info"?"Пропустить":"Пропуск"}</button>
     <button class="btn primary" data-act="next">${isLast?"Завершить":ex.type==="info"?"Готово →":"Дальше →"}</button>
   </div></div>`;
+}
+
+/* ---------- карточка упражнения: картинка, заметка, параметры, техника ---------- */
+const META = {
+  leg_press:{equip:"Тренажёр для жима ногами, блины", w:20, goal:80, wn:"блины сверх веса платформы"},
+  lat_pulldown:{equip:"Блок верхней тяги, широкая рукоять", w:25, goal:45},
+  chest_press:{equip:"Тренажёр для жима от груди", w:20, goal:40},
+  leg_curl:{equip:"Тренажёр для сгибания ног", w:15, goal:30},
+  lateral_raise:{equip:"Гантели", w:3, goal:7, wn:"одна гантель"},
+  plank:{equip:"Коврик", w:0, goal:0, sec:[30,60]},
+  goblet_squat:{equip:"Гантель", w:10, goal:20},
+  seated_row:{equip:"Блок нижней тяги, V-рукоять", w:25, goal:45},
+  incline_db_press:{equip:"Гантели, наклонная скамья", w:8, goal:16, wn:"одна гантель"},
+  leg_extension:{equip:"Тренажёр для разгибания ног", w:15, goal:35},
+  biceps_curl:{equip:"Гантели", w:6, goal:10, wn:"одна гантель"},
+  triceps_pushdown:{equip:"Кроссовер (верхний блок), прямая рукоять или канат", w:15, goal:25},
+  hyperextension:{equip:"Скамья для гиперэкстензии", w:0, goal:10, wn:"0 = без веса; цель — блин к груди"},
+};
+// id -> число кадров в папке img/ (картинки: 3D-иллюстрации, сгенерированы для этого приложения)
+const IMG = {leg_press:2, lat_pulldown:2, chest_press:2, leg_curl:2, lateral_raise:2, plank:1, goblet_squat:2,
+  seated_row:2, incline_db_press:2, leg_extension:2, biceps_curl:2, triceps_pushdown:2, hyperextension:2};
+let wTab = "sets", animPaused = false;
+function mediaBox(id, ex){
+  const n = IMG[id];
+  if (!n) return animBox(id, ex);
+  return `<div class="media" data-ex="${id}">
+    <img class="fa" src="img/${id}_a.webp" alt="${ex.name}: начальное положение" loading="lazy">
+    ${n>1?`<img class="fb" src="img/${id}_b.webp" alt="${ex.name}: конечное положение" loading="lazy">`:""}
+    <span class="mphase"></span>
+    ${n>1?`<button class="mpause" data-act="pause" aria-label="${animPaused?"Запустить":"Пауза"}">${animPaused?"▶":"❚❚"}</button>`:""}
+  </div>`;
+}
+function noteField(id){
+  const v = (S.notes && S.notes[id]) || "";
+  return `<label class="note"><input id="note-${id}" type="text" data-note="${id}" value="${v.replace(/"/g,"&quot;")}" placeholder="Добавить заметку (сиденье, хват…)" maxlength="140"><span aria-hidden="true">✎</span></label>`;
+}
+function infoRows(id, ex){
+  const m = META[id] || {}, isT = ex.type==="time";
+  const w = isT ? `${m.sec[0]} с → цель ${m.sec[1]} с` : `старт <b>${m.w===0?"без веса":fmt(m.w)+" кг"}</b> → через 3 мес ≈ <b>${fmt(m.goal)} кг</b>${m.wn?` <span class="muted">(${m.wn})</span>`:""}`;
+  return `<dl class="info">
+    <dt>Область внимания</dt><dd>${ex.muscles}</dd>
+    <dt>Оборудование</dt><dd>${m.equip||ex.machine}</dd>
+    <dt>Рекомендуемый вес</dt><dd>${w}</dd>
+    <dt>Подходы</dt><dd>${setsFor(ex)} × ${ex.lo}–${ex.hi} ${isT?"сек":"повторов"}, отдых ${ex.rest} с</dd>
+    <dt>Темп</dt><dd>${isT?"держи ровно, дыши спокойно":"усилие 1–2 с на выдохе, возврат 2–3 с на вдохе"}</dd>
+  </dl>`;
+}
+function techPane(ex){
+  const q = encodeURIComponent("техника " + ex.name.replace(/\s*\(.*\)/, "") + " в тренажёрном зале");
+  return `<div class="tech">
+    <p style="margin:0">${ex.machine}</p>
+    <h4>Настройка</h4><ul>${ex.setup.map(x=>`<li>${x}</li>`).join("")}</ul>
+    <h4>Техника</h4><ul>${ex.technique.map(x=>`<li>${x}</li>`).join("")}</ul>
+    <h4>Частые ошибки</h4><ul>${ex.mistakes.map(x=>`<li>${x}</li>`).join("")}</ul>
+    <a class="vid" style="display:inline-block;margin-top:10px" href="https://www.youtube.com/results?search_query=${q}" target="_blank" rel="noopener">▶ Видео техники на YouTube</a>
+    <p class="muted" style="margin-top:10px;font-size:14px">Не нашёл тренажёр или не понял настройку — спроси дежурного тренера X-FIT, это бесплатно.</p>
+  </div>`;
 }
 
 function spark(vals){
@@ -553,7 +625,7 @@ function renderProg(){
 }
 function renderGuide(){
   const plan = k => `<div class="row" style="gap:10px;margin-bottom:6px"><span class="plate sm ${k}">${k}</span><b>${W[k].title}</b></div><ul class="exlist" style="margin-bottom:12px">${W[k].items.map(id=>{const e=EX[id];return `<li><span>${e.name}</span><span>${e.type==="info"?"5–10 мин":`${e.sets}×${e.lo}–${e.hi}${e.type==="time"?" с":""}`}</span></li>`}).join("")}</ul>`;
-  const lib = Object.entries(EX).filter(([,e])=>e.type!=="info").map(([id,e])=>`<details class="tech"><summary>${e.name}</summary><div style="margin-top:8px">${animBox(id, e)}</div><p style="margin-top:6px"><i class="muted">${e.muscles}.</i> ${e.machine}</p><h4>Настройка</h4><ul>${e.setup.map(x=>`<li>${x}</li>`).join("")}</ul><h4>Техника</h4><ul>${e.technique.map(x=>`<li>${x}</li>`).join("")}</ul><h4>Ошибки</h4><ul>${e.mistakes.map(x=>`<li>${x}</li>`).join("")}</ul></details>`).join("");
+  const lib = Object.entries(EX).filter(([,e])=>e.type!=="info").map(([id,e])=>`<details class="tech"><summary>${e.name}</summary><div style="margin-top:8px">${mediaBox(id, e)}</div>${infoRows(id, e)}<p style="margin-top:6px"><i class="muted">${e.muscles}.</i> ${e.machine}</p><h4>Настройка</h4><ul>${e.setup.map(x=>`<li>${x}</li>`).join("")}</ul><h4>Техника</h4><ul>${e.technique.map(x=>`<li>${x}</li>`).join("")}</ul><h4>Ошибки</h4><ul>${e.mistakes.map(x=>`<li>${x}</li>`).join("")}</ul></details>`).join("");
   return `${header("гид новичка")}
   <section class="card guide"><div class="label">Программа</div>
     <p>2 тренировки в неделю, A и B по очереди. Между ними минимум день отдыха.</p>
@@ -608,6 +680,8 @@ document.addEventListener("click", e => {
   else if (act==="timer-add"){ tEnd += 30000; tick(); }
   else if (act==="timer-off"){ stopTimer(); }
   else if (act==="delbody"){ S.body.pop(); save(); render(); }
+  else if (act==="wtab"){ wTab = v; render(); }
+  else if (act==="pause"){ animPaused = !animPaused; b.textContent = animPaused ? "▶" : "❚❚"; b.setAttribute("aria-label", animPaused ? "Запустить" : "Пауза"); }
   else if (act==="backup"){
     const txt = "XFIT1:" + JSON.stringify({...S, active:null});
     const fallback = () => { const ta = document.getElementById("restore"); ta.closest("details").open = true; ta.value = txt; ta.focus(); ta.select(); toast("Выдели и скопируй текст в поле"); };
@@ -622,7 +696,9 @@ document.addEventListener("click", e => {
   else if (act==="restore-yes"){ S = Object.assign(fresh(), restoreArmed, {active:null}); restoreArmed = null; save(); render(); toast("Данные восстановлены"); }
 });
 document.addEventListener("input", e => {
-  const inp = e.target; if (!inp.dataset || inp.dataset.set === undefined || !S.active) return;
+  const inp = e.target;
+  if (inp.dataset && inp.dataset.note){ S.notes = S.notes || {}; S.notes[inp.dataset.note] = inp.value.trim(); save(); return; }
+  if (!inp.dataset || inp.dataset.set === undefined || !S.active) return;
   const l = ensureLog(), i = +inp.dataset.set, f = inp.dataset.f, val = inp.value === "" ? "" : +inp.value;
   l.sets[i][f] = val;
   if (f==="w"){ for (let j=i+1;j<l.sets.length;j++){ if (!l.sets[j].done){ l.sets[j].w = val; const o = document.getElementById(`w-${cur().id}-${j}`); if (o) o.value = val; } } }
@@ -782,6 +858,16 @@ function drawFront(p, hl){
 }
 const ease = k => k<.5 ? 2*k*k : 1-Math.pow(-2*k+2,2)/2;
 const reduceMotion = (()=>{ try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch(e){ return false; } })();
+function timing(a, time){
+  const tEff = 1.3, tRet = 2.2, hold = .45;
+  const first = a.eff==="AB" ? tEff : tRet, second = a.eff==="AB" ? tRet : tEff;
+  const t = (time/1000) % (hold + first + hold + second);
+  if (t < hold) return {k:0, phase:"пауза", isEff:false};
+  if (t < hold+first){ const e = a.eff==="AB"; return {k:ease((t-hold)/first), phase: e?"усилие · выдох":"медленно · вдох", isEff:e}; }
+  if (t < 2*hold+first) return {k:1, phase:"пауза", isEff:false};
+  const e = a.eff==="BA"; return {k:1-ease((t-2*hold-first)/second), phase: e?"усилие · выдох":"медленно · вдох", isEff:e};
+}
+let animClock = 0, lastNow = 0;
 function frame(id, time){
   const a = ANIM[id]; if (!a) return "";
   const tEff = 1.3, tRet = 2.2, hold = .45;
@@ -810,10 +896,17 @@ function animBox(id, ex){
   return `<div class="animbox">${ANIM[id] ? `<svg class="anim" data-ex="${id}" viewBox="0 0 240 180" role="img" aria-label="Анимация: ${ex.name}"></svg>` : ""}<a class="vid" href="https://www.youtube.com/results?search_query=${q}" target="_blank" rel="noopener">▶ Видео техники на YouTube</a></div>`;
 }
 function animLoop(now){
-  for (const el of document.querySelectorAll("svg.anim")){
-    const r = el.getBoundingClientRect();
-    if (!r.height || r.bottom < 0 || r.top > innerHeight) continue;
-    el.innerHTML = frame(el.dataset.ex, now);
+  if (!animPaused) animClock += Math.min(now - lastNow, 100);
+  lastNow = now;
+  const vis = el => { const r = el.getBoundingClientRect(); return r.height && r.bottom > 0 && r.top < innerHeight; };
+  for (const el of document.querySelectorAll("svg.anim")){ if (vis(el)) el.innerHTML = frame(el.dataset.ex, animClock); }
+  for (const el of document.querySelectorAll(".media")){
+    if (!vis(el)) continue;
+    const a = ANIM[el.dataset.ex] || {eff:"AB"}, fb = el.querySelector(".fb"), ph = el.querySelector(".mphase");
+    if (a.hold || !fb){ if (ph) ph.textContent = "держи ровно · дыши"; continue; }
+    const tm = timing(a, animClock), k = tm.k, o = k<=.3 ? 0 : k>=.7 ? 1 : (k-.3)/.4;
+    fb.style.opacity = o.toFixed(3);
+    if (ph){ ph.textContent = tm.phase; ph.classList.toggle("eff", tm.isEff); }
   }
   requestAnimationFrame(animLoop);
 }
