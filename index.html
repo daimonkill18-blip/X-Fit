@@ -141,6 +141,19 @@ svg.anim .phase.eff{fill:var(--accent)}
 .seg{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line)}
 .seg button{appearance:none;border:0;background:none;padding:12px 4px;font:700 14px var(--f-body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent}
 .seg button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.wblock{display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid var(--line)}
+.wtitle{font:700 16px/1.25 var(--f-display)}
+.witem{appearance:none;display:grid;grid-template-columns:30px 1fr;gap:10px;align-items:start;text-align:left;width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--ink);font:inherit;cursor:pointer}
+.witem[disabled]{cursor:default}
+.witem .wcheck{width:26px;height:26px;border-radius:8px;border:2px solid var(--line);display:grid;place-items:center;font-weight:700;color:#fff;margin-top:1px}
+.witem.on{border-color:color-mix(in srgb,var(--ok) 45%,var(--line))}
+.witem.on .wcheck{background:var(--ok);border-color:var(--ok)}
+.witem.on .wtxt b{text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--ink) 40%,transparent)}
+.wtxt{display:flex;flex-direction:column;gap:2px;min-width:0;font-size:15px}
+.wtxt b{font-weight:650}
+.wdose{font:600 14px var(--f-body);color:var(--accent)}
+.whow{font-size:14px;color:var(--muted)}
+.witem:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 60%,transparent)}
 .empty{padding:18px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}
 .guide p{margin:0 0 8px}
 .guide ul{margin:0 0 8px;padding-left:20px;display:flex;flex-direction:column;gap:4px}
@@ -392,7 +405,9 @@ function beep(){
   } catch(e){}
   try { navigator.vibrate && navigator.vibrate([200,100,200]); } catch(e){}
 }
-function startTimer(sec){
+let tLabel = "отдых", tDoneText = "Отдых окончен, следующий подход";
+function startTimer(sec, label="отдых", doneText="Отдых окончен, следующий подход"){
+  tLabel = label; tDoneText = doneText;
   try { audio = audio || new (window.AudioContext||window.webkitAudioContext)(); audio.resume && audio.resume(); } catch(e){}
   tEnd = Date.now() + sec*1000; clearInterval(tInt); tInt = setInterval(tick, 250); tick();
 }
@@ -403,11 +418,11 @@ function tick(){
   if (left <= 0){
     if (!el.classList.contains("end")){ beep(); }
     el.className = "timer end";
-    el.innerHTML = `<span>Отдых окончен, следующий подход</span><button data-act="timer-off">OK</button>`;
+    el.innerHTML = `<span>${tDoneText}</span><button data-act="timer-off">OK</button>`;
     clearInterval(tInt); tInt = null; return;
   }
   el.className = "timer";
-  el.innerHTML = `<span class="label" style="color:inherit;opacity:.7">отдых</span><span class="big num">${Math.floor(left/60)}:${String(left%60).padStart(2,"0")}</span><button data-act="timer-add">+30 с</button><button data-act="timer-off">Хватит</button>`;
+  el.innerHTML = `<span class="label" style="color:inherit;opacity:.7">${tLabel}</span><span class="big num">${Math.floor(left/60)}:${String(left%60).padStart(2,"0")}</span><button data-act="timer-add">+30 с</button><button data-act="timer-off">Хватит</button>`;
 }
 
 /* ======================= ОТРИСОВКА ======================= */
@@ -490,7 +505,9 @@ function renderWorkout(){
   const steps = `<div class="steps">${items.map((_,i)=>`<b class="${i<a.idx?"done":i===a.idx?"cur":""}"></b>`).join("")}</div>`;
   let main = "";
   if (ex.type==="info"){
-    main = `<section class="card"><div class="label">Шаг ${a.idx+1} из ${items.length}</div><h2 class="exname">${ex.name}</h2><div class="guide">${ex.text}</div></section>`;
+    main = id==="warmup"
+      ? `<section class="card"><div class="label">Шаг ${a.idx+1} из ${items.length} · ~10 минут</div><h2 class="exname">Разминка</h2>${warmupHtml(a)}</section>`
+      : `<section class="card"><div class="label">Шаг ${a.idx+1} из ${items.length}</div><h2 class="exname">${ex.name}</h2><div class="guide">${ex.text}</div></section>`;
   } else {
     const last = lastLog(id), r = rec(ex, last), l = ensureLog(), isT = ex.type==="time";
     const rows = l.sets.map((s,i)=> isT
@@ -526,6 +543,49 @@ function renderWorkout(){
     <button class="btn" data-act="skip">${ex.type==="info"?"Пропустить":"Пропуск"}</button>
     <button class="btn primary" data-act="next">${isLast?"Завершить":ex.type==="info"?"Готово →":"Дальше →"}</button>
   </div></div>`;
+}
+
+/* ---------- разминка: 4 блока, отмечаешь галочками ---------- */
+const WARMUP = [
+  {title:"1. Кардио", time:"5 мин", timer:300, why:"Разогреть мышцы и разогнать пульс. Лёгкая испарина — значит, готов.", items:[
+    {n:"Эллипс (орбитрек) или велотренажёр", d:"5 мин", how:"Лёгкое сопротивление 3–5 из 20. Темп такой, чтобы можно было разговаривать. В прохладном зале — 7–8 минут."},
+    {n:"…или дорожка быстрым шагом", d:"5 мин", how:"Скорость 5,5–6,5 км/ч, наклон 3–5%. Не бежать, за поручни не держаться."},
+  ]},
+  {title:"2. Суставная разминка", time:"~3 мин", why:"Сверху вниз, плавно, без рывков и боли. Делай стоя у зеркала.", items:[
+    {n:"Наклоны головы", d:"по 5 в каждую сторону", how:"Вперёд-назад и к плечам, медленно. Резко голову не вращай."},
+    {n:"Круги плечами", d:"по 10 вперёд и назад", how:"Руки опущены, рисуй плечами большие круги."},
+    {n:"Круги прямыми руками («мельница»)", d:"по 10 вперёд и назад", how:"Руки прямые, амплитуда большая, корпус не раскачивай."},
+    {n:"Вращения в локтях и кистях", d:"по 10", how:"Руки в стороны, крути предплечьями, потом кулаками."},
+    {n:"Наклоны корпуса в стороны", d:"по 8 в каждую сторону", how:"Руки на поясе, тянись вбок, таз на месте."},
+    {n:"Вращения тазом", d:"по 8 в каждую сторону", how:"Руки на поясе, ноги на ширине плеч, рисуй тазом круг."},
+    {n:"Круги коленями", d:"по 8 в каждую сторону", how:"Ноги вместе, ладони на коленях, колени слегка согнуты."},
+    {n:"Вращения стопой", d:"по 10 каждой", how:"Носок на полу, крути пяткой; держись за стену."},
+  ]},
+  {title:"3. Активация мышц", time:"~2 мин", why:"Включает мышцы, которые сегодня будут работать. Без веса, медленно и подконтрольно.", items:[
+    {n:"Приседания без веса", d:"12–15", how:"Пятки на полу, колени смотрят туда же, куда носки, спина прямая, руки вперёд для баланса."},
+    {n:"Ягодичный мостик на коврике", d:"12", how:"Лёжа на спине, стопы у таза. Поднимай таз до прямой линии колени–плечи, сожми ягодицы на 1 сек."},
+    {n:"Отжимания от скамьи или стены", d:"10", how:"Руки чуть шире плеч, тело прямое, грудь опускай к опоре."},
+    {n:"Подъёмы рук «Y» и «T»", d:"по 10", how:"Стоя, лёгкий наклон вперёд. Поднимай прямые руки буквой Y (вверх-в стороны), потом T (в стороны). Своди лопатки."},
+  ]},
+];
+function warmupHtml(a){
+  const st = (a && a.warm) || {};
+  let total = 0, done = 0;
+  const first = a ? W[a.w].items.find(id=>EX[id].type!=="info") : null;
+  const blocks = WARMUP.map((b,bi)=>`<div class="wblock">
+    <div class="row" style="justify-content:space-between;align-items:baseline"><h3 class="wtitle">${b.title}</h3><span class="pill">${b.time}</span></div>
+    <p class="muted" style="margin:0;font-size:14px">${b.why}</p>
+    ${b.items.map((it,ii)=>{ const k = bi+"-"+ii, on = !!st[k]; total++; if (on) done++;
+      return `<button class="witem ${on?"on":""}" ${a?`data-act="warm" data-v="${k}"`:"disabled"} aria-pressed="${on}"><span class="wcheck">${on?"✓":""}</span><span class="wtxt"><b>${it.n}</b> <span class="num wdose">${it.d}</span><span class="whow">${it.how}</span></span></button>`; }).join("")}
+    ${b.timer && a ? `<button class="btn" data-act="warm-timer" data-v="${b.timer}">⏱ Запустить таймер ${b.timer/60} мин</button>` : ""}
+  </div>`).join("");
+  const fx = first ? EX[first] : null, fm = first ? META[first] : null;
+  const ramp = `<div class="wblock"><div class="row" style="justify-content:space-between;align-items:baseline"><h3 class="wtitle">4. Разминочные подходы</h3><span class="pill">в начале каждого упражнения</span></div>
+    <p style="margin:0;font-size:15px">Перед <b>каждым</b> упражнением — 1 лёгкий подход: ~50% рабочего веса на 10–12 повторов. Он не записывается.</p>
+    ${fx ? `<p style="margin:0;font-size:15px">Первое упражнение сегодня — <b>${fx.name}</b>. Для него сделай 2 разминочных подхода: <span class="num">${fm.w? fmt(Math.round(fm.w*0.5)) + " кг × 10" : "лёгкий вес × 10"}</span>, затем <span class="num">${fm.w? fmt(Math.round(fm.w*0.75)) + " кг × 5" : "средний вес × 5"}</span> (от стартового веса; когда рабочий вырастет — считай от него).</p>` : ""}
+  </div>`;
+  const rules = `<div class="tip" style="font-size:14px"><b>Важно.</b> Долгую статичную растяжку до тренировки не делай — она на заминке. Если что-то болит в суставе — пропусти это движение и скажи тренеру.</div>`;
+  return (a ? `<div class="muted" style="font-size:14px">Отмечено: <b style="color:var(--ink)">${done} из ${total}</b> — нажимай на пункты по ходу.</div>` : "") + blocks + ramp + rules;
 }
 
 /* ---------- карточка упражнения: картинка, заметка, параметры, техника ---------- */
@@ -639,6 +699,7 @@ function renderGuide(){
     <p><b>Рабочий вес.</b> Начни с лёгкого. Если сделал нужное число повторов и мог ещё 4+ — добавь вес. Правильный вес: последние 1–2 повтора даются с усилием, а техника не ломается.</p>
     <p><b>Темп и дыхание.</b> Усилие на выдохе, возврат на вдохе. Опускаешь медленно (2–3 сек), поднимаешь уверенно (1–2 сек).</p>
   </section>
+  <section class="card guide"><div class="label">Разминка перед каждой тренировкой · ~10 минут</div>${warmupHtml(null)}</section>
   <section class="card guide"><div class="label">Отдых и безопасность</div>
     <ul><li>Ноги, тяги, жимы: отдых 1,5–2 мин. Руки, плечи, пресс: 1 мин.</li><li>Острая боль в суставе — сразу стоп. Жжение в мышце — норма.</li><li>Мышцы болят 1–3 дня после тренировки — это нормально первые недели.</li><li>Не понимаешь, как настроить тренажёр, — спроси дежурного тренера.</li></ul>
   </section>
@@ -681,6 +742,8 @@ document.addEventListener("click", e => {
   else if (act==="timer-off"){ stopTimer(); }
   else if (act==="delbody"){ S.body.pop(); save(); render(); }
   else if (act==="wtab"){ wTab = v; render(); }
+  else if (act==="warm"){ const a = S.active; a.warm = a.warm || {}; a.warm[v] = !a.warm[v]; save(); const y = scrollY; render(); scrollTo(0, y); }
+  else if (act==="warm-timer"){ startTimer(+v, "кардио", "Кардио готово — переходи к суставной разминке"); }
   else if (act==="pause"){ animPaused = !animPaused; b.textContent = animPaused ? "▶" : "❚❚"; b.setAttribute("aria-label", animPaused ? "Запустить" : "Пауза"); }
   else if (act==="backup"){
     const txt = "XFIT1:" + JSON.stringify({...S, active:null});
