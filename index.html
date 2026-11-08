@@ -234,10 +234,20 @@ const EX = {
   mistakes:["Переразгибание поясницы вверху","Рывки"]},
 };
 const W = {
- A:{title:"Ноги, спина, грудь, плечи",items:["warmup","flip","leg_press","lat_pulldown","chest_press","leg_curl","lateral_raise","plank","cooldown"]},
- B:{title:"Присед, спина, грудь, руки",items:["warmup","flip","goblet_squat","seated_row","incline_db_press","leg_extension","biceps_curl","triceps_pushdown","hyperextension","cooldown"]},
+ A:{title:"Ноги, спина, грудь, плечи",items:["warmup","flip","leg_press","lat_pulldown","chest_press","leg_curl","lateral_raise","calf_raise","plank","cooldown"]},
+ B:{title:"Присед, спина, грудь, руки",items:["warmup","flip","goblet_squat","rdl","seated_row","incline_db_press","leg_extension","calf_raise","biceps_curl","triceps_pushdown","cooldown"]},
 };
 EX.flip = {name:"Сальто-блок", type:"info", text:""};
+EX.calf_raise = {name:"Подъёмы на носки с гантелями",type:"weight",sets:3,lo:12,hi:15,rest:60,step:2,start:"гантели по 8 кг",muscles:"икры — толчок стопой в прыжке",dumb:true,
+  machine:"Гантели и степ-платформа (или блин на полу). Записывай вес одной гантели.",
+  setup:["Встань носками на край степа или блина, пятки свисают.","Гантели в опущенных руках. Если шатает — держись одной рукой за стойку, а гантель возьми одну."],
+  technique:["Опусти пятки ниже опоры — почувствуй растяжение икр.","Поднимись на носки максимально высоко, пауза 1 сек наверху.","Медленно, 2–3 сек, вниз. Колени почти прямые."],
+  mistakes:["Пружинить без паузы","Сгибать колени","Короткая амплитуда"]};
+EX.rdl = {name:"Румынская тяга с гантелями",type:"weight",sets:3,lo:10,hi:12,rest:90,step:2,start:"гантели по 8 кг",muscles:"задняя поверхность бедра и ягодицы — главный «мотор» прыжка",dumb:true,
+  machine:"Две гантели. Записывай вес одной гантели.",
+  setup:["Стоя, стопы на ширине таза, гантели перед бёдрами, ладони к себе.","Колени чуть согнуты и остаются так всё упражнение."],
+  technique:["Отводи таз назад и наклоняйся с прямой спиной, гантели скользят вдоль ног.","Опускайся, пока чувствуешь натяжение задней поверхности бедра — обычно гантели чуть ниже колен.","Вставай, толкая таз вперёд и сжимая ягодицы. Выдох на подъёме."],
+  mistakes:["Круглая спина","Приседать вместо наклона","Гантели далеко от ног"]};
 for (const k in EX) EX[k].id = k;
 const BEGINNER = 4;
 const DAYS = ["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
@@ -566,7 +576,7 @@ const FLIP = [
    {n:"Обратный кувырок на мате", d:"3 × 3", how:"Сядь на корточки, перекатись на спину, ладони у ушей пальцами к плечам, оттолкнись руками и перекатись через плечи в упор присев. Голову не поворачивай вбок."},
    {n:"Мостик из положения лёжа", d:"3 × 10 с", how:"Лёжа на спине, ладони у ушей, стопы у таза. Выжми таз и грудь вверх. Готовит плечи и спину, учит не бояться прогиба."},
   ],
-  tests:["5 tuck jump подряд — колени выше пояса","Лодочка 30 секунд без прогиба в пояснице","5 обратных кувырков ровно, без завала на бок","Прыжок с махом рук: уверенно и с мягким приземлением"]},
+  tests:["5 tuck jump подряд — колени выше пояса","Лодочка 30 секунд без прогиба в пояснице","5 обратных кувырков ровно, без завала на бок","Прыжок вверх с места — 35 см и выше (замер ниже)"]},
  {name:"Вращение назад", where:"в X-FIT, на матах", weeks:"2–3 недели",
   goal:"Быстро группироваться и вращаться назад без страха.",
   drills:[
@@ -575,9 +585,10 @@ const FLIP = [
    {n:"Быстрый обратный кувырок на стопы", d:"3 × 5", how:"Обратный кувырок с сильным толчком руками и быстрым приходом на стопы. Чем быстрее — тем лучше."},
    {n:"Прыжок назад-вверх на стопку матов", d:"3 × 5 (если есть маты 60+ см)", how:"Встань спиной к высокой стопке матов. Мах руками, прыжок ВВЕРХ и немного назад, падай на спину на маты с поднятыми руками. Учит не бояться выпрыгивать назад. Нет матов — пропусти."},
    {n:"Маховые прыжки «руки и грудь вверх»", d:"3 × 5", how:"Прыжок с махом рук, в верхней точке руки и грудь тянутся вверх-назад, взгляд вверх. Голову НЕ запрокидывай резко."},
+   {n:"Прыжки из приседа с лёгкими гантелями", d:"3 × 5, гантели по 3–5 кг", how:"Гантели в опущенных руках. Полуприсед — и взрывной прыжок вверх, приземление мягкое в полуприсед, пауза 2–3 с, следующий. Только качество: если прыжок стал ниже — подход окончен."},
    {n:"Лодочка + «ракушка»", d:"3 подхода", how:"Лодочка 20 с, затем 5 перекатов на спине в группировке (колени к груди, руками держишь голени)."},
   ],
-  tests:["Перекат назад из стойки — плавно 5 раз","Быстрый обратный кувырок на стопы","Tuck jump с удержанием группировки 5 раз","Не страшно падать назад на маты"]},
+  tests:["Перекат назад из стойки — плавно 5 раз","Быстрый обратный кувырок на стопы","Tuck jump с удержанием группировки 5 раз","Прыжок вверх с места — 40 см и выше","Не страшно падать назад на маты"]},
  {name:"Сальто на батуте", where:"батутный центр или секция акробатики, с тренером", weeks:"3–6 занятий",
   goal:"Сделать первое настоящее сальто назад — на мягкой поверхности и со страховкой.",
   drills:[
@@ -642,6 +653,7 @@ function renderFlip(){
     ${si < 3 ? `<button class="btn ${allOk?"primary":""}" data-act="flip-next" ${allOk?"":"disabled"}>${allOk?`Перейти на этап ${si+2} →`:`Выполни все пункты теста, чтобы открыть этап ${si+2}`}</button>` : (allOk?`<div class="tip up"><b>Поздравляю — у тебя есть заднее сальто!</b> Поддерживай: 1–2 раза в месяц на мягком покрытии.</div>`:"")}
     ${si > 0 ? `<button class="btn ghost" data-act="flip-prev">← вернуться на этап ${si}</button>` : ""}
   </section>
+  ${jumpCard()}
   <section class="card">
     <div class="label">Как выглядит сальто</div>
     <div class="animbox"><svg class="flipanim" viewBox="0 0 240 180" role="img" aria-label="Анимация заднего сальто по фазам"></svg></div>
@@ -664,6 +676,26 @@ function renderFlip(){
       <div style="display:flex;flex-direction:column;gap:8px">${drillsHtml(s.drills, null, false)}</div>
       <h4 class="label" style="margin:12px 0 6px">Тест</h4><div style="display:flex;flex-direction:column;gap:8px">${flipTestsHtml(F, i, false)}</div>
     </details>`).join("")}
+  </section>`;
+}
+
+/* замер вертикального прыжка */
+function jumpCard(){
+  const J = S.jumps || [], last = J[J.length-1], first = J[0], best = J.length ? Math.max(...J.map(j=>j.cm)) : 0;
+  const lvl = !last ? "" : last.cm >= 45 ? "Отлично — высоты с запасом для сальто." : last.cm >= 40 ? "Хватает для сальто при хорошей группировке." : last.cm >= 35 ? "Минимум для сальто — ещё немного, и будет запас." : "Пока мало для сальто — работаем на этапе 1, прыжок растёт за 4–8 недель.";
+  return `<section class="card">
+    <div class="label">Замер прыжка</div>
+    <div class="row" style="align-items:baseline;gap:10px">${last?`<span class="big">${last.cm}</span><span class="muted">см</span>${J.length>1?`<span class="num" style="color:${last.cm>=first.cm?"var(--ok)":"var(--warn)"};font-size:14px">${last.cm>=first.cm?"+":""}${last.cm-first.cm} с первого замера · лучший ${best}</span>`:""}`:`<span class="muted">Ещё не мерил</span>`}</div>
+    ${lvl?`<div class="tip ${last.cm>=40?"up":""}">${lvl}</div>`:""}
+    <div class="target"><span class="pill">меньше 35 — мало</span><span class="pill">35–40 — минимум</span><span class="pill">40+ — хорошо</span><span class="pill">45+ — с запасом</span></div>
+    ${J.length>1?spark(J.map(j=>j.cm)):""}
+    <details><summary>Как измерить (2 минуты)</summary><ol class="phases" style="margin-top:6px">
+      <li>Встань боком к стене, пятки на полу, вытяни ближнюю руку вверх. Отметь самую высокую точку пальцев (мел, стикер или фото на телефон).</li>
+      <li>Без разбега, с махом рук прыгни и коснись стены как можно выше. Отметь точку.</li>
+      <li>Разница между отметками — твой прыжок. Сделай 3 попытки, запиши лучшую.</li>
+      <li>Меряй раз в 2 недели, после разминки, в начале тренировки.</li>
+    </ol></details>
+    <form class="weightform" data-form="jump"><input id="jumpcm" type="number" inputmode="numeric" min="5" max="120" placeholder="см, например 34" aria-label="Высота прыжка, см"><button class="btn" type="submit">Записать</button></form>
   </section>`;
 }
 
@@ -754,10 +786,12 @@ const META = {
   biceps_curl:{equip:"Гантели", w:6, goal:10, wn:"одна гантель"},
   triceps_pushdown:{equip:"Кроссовер (верхний блок), прямая рукоять или канат", w:15, goal:25},
   hyperextension:{equip:"Скамья для гиперэкстензии", w:0, goal:10, wn:"0 = без веса; цель — блин к груди"},
+  calf_raise:{equip:"Гантели, степ-платформа или блин", w:8, goal:16, wn:"одна гантель"},
+  rdl:{equip:"Гантели", w:8, goal:18, wn:"одна гантель"},
 };
 // id -> число кадров в папке img/ (картинки: 3D-иллюстрации, сгенерированы для этого приложения)
 const IMG = {leg_press:2, lat_pulldown:2, chest_press:2, leg_curl:2, lateral_raise:2, plank:1, goblet_squat:2,
-  seated_row:2, incline_db_press:2, leg_extension:2, biceps_curl:2, triceps_pushdown:2, hyperextension:2};
+  seated_row:2, incline_db_press:2, leg_extension:2, biceps_curl:2, triceps_pushdown:2, hyperextension:2, calf_raise:2, rdl:2};
 let wTab = "sets", animPaused = false;
 function mediaBox(id, ex){
   const n = IMG[id];
@@ -925,6 +959,11 @@ document.addEventListener("input", e => {
 });
 document.addEventListener("submit", e => {
   e.preventDefault();
+  if (e.target.dataset.form==="jump"){
+    const v = parseInt(document.getElementById("jumpcm").value, 10);
+    if (!(v >= 5 && v <= 120)){ toast("Впиши высоту прыжка в сантиметрах, например 34"); return; }
+    S.jumps = S.jumps || []; S.jumps.push({d:new Date().toISOString(), cm:v}); save(); render(); toast("Прыжок записан"); return;
+  }
   if (e.target.dataset.form==="body"){
     const v = parseFloat(String(document.getElementById("bodyw").value).replace(",", "."));
     if (!(v > 30 && v < 200)){ toast("Впиши вес в килограммах, например 59,4"); return; }
@@ -1122,7 +1161,7 @@ function animLoop(now){
   for (const el of document.querySelectorAll("svg.flipanim")){ if (vis(el)) el.innerHTML = flipFrame(animClock); }
   for (const el of document.querySelectorAll(".media")){
     if (!vis(el)) continue;
-    const a = ANIM[el.dataset.ex] || {eff:"AB"}, fb = el.querySelector(".fb"), ph = el.querySelector(".mphase");
+    const a = ANIM[el.dataset.ex] || {eff: el.dataset.ex==="rdl" ? "BA" : "AB"}, fb = el.querySelector(".fb"), ph = el.querySelector(".mphase");
     if (a.hold || !fb){ if (ph) ph.textContent = "держи ровно · дыши"; continue; }
     const tm = timing(a, animClock), k = tm.k, o = k<=.3 ? 0 : k>=.7 ? 1 : (k-.3)/.4;
     fb.style.opacity = o.toFixed(3);
