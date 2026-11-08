@@ -154,6 +154,9 @@ svg.anim .phase.eff{fill:var(--accent)}
 .wdose{font:600 14px var(--f-body);color:var(--accent)}
 .whow{font-size:14px;color:var(--muted)}
 .witem:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 60%,transparent)}
+.drill{display:flex;flex-direction:column;gap:6px}
+.drill .media{border-radius:12px;aspect-ratio:16/10}
+.drill .media + .witem{border-top-left-radius:12px;border-top-right-radius:12px}
 .phases{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px}
 details summary{gap:8px}
 .btn[disabled]{opacity:.55;cursor:not-allowed}
@@ -622,9 +625,23 @@ function flipTestsHtml(F, si, interactive){
   const st = FLIP[si], t = F.tests[si] || {};
   return st.tests.map((x,i)=>`<button class="witem ${t[i]?"on":""}" ${interactive?`data-act="flipt" data-v="${si}-${i}"`:"disabled"} aria-pressed="${!!t[i]}"><span class="wcheck">${t[i]?"✓":""}</span><span class="wtxt"><b>${x}</b></span></button>`).join("");
 }
+// картинки к упражнениям сальто (img/fl_<ключ>_a/_b.webp)
+const FLIP_IMG = {
+  "Прыжок вверх с махом рук":"jump_arm", "Маховые прыжки «руки и грудь вверх»":"jump_arm",
+  "Прыжок с подтягиванием коленей (tuck jump)":"tuck_jump", "Tuck jump с удержанием группировки":"tuck_jump",
+  "Лодочка на спине (hollow hold)":"hollow", "Лодочка + «ракушка»":"hollow",
+  "Подъём коленей к груди в висе":"hang_knee",
+  "Обратный кувырок на мате":"back_roll", "Быстрый обратный кувырок на стопы":"back_roll",
+  "Мостик из положения лёжа":"bridge", "Перекат назад из стойки":"back_rock",
+  "Прыжок назад-вверх на стопку матов":"mat_fall", "Прыжки из приседа с лёгкими гантелями":"db_jump",
+  "Контроль прыжка на батуте":"tramp_bounce", "Падение на спину и возврат на ноги":"tramp_back",
+  "Сальто назад со страховкой тренера":"tramp_spot", "Сальто на батуте самостоятельно":"tramp_spot",
+  "Сальто в поролоновую яму":"foam_pit", "Сальто с возвышения на мат":"box_flip",
+};
 function drillsHtml(list, doneMap, interactive){
-  return list.map((it,i)=>{ const on = !!(doneMap && doneMap[i]);
-    return `<button class="witem ${on?"on":""}" ${interactive?`data-act="flipd" data-v="${i}"`:"disabled"} aria-pressed="${on}"><span class="wcheck">${on?"✓":""}</span><span class="wtxt"><b>${it.n}</b> <span class="wdose">${it.d}</span><span class="whow">${it.how}</span></span></button>`; }).join("");
+  return list.map((it,i)=>{ const on = !!(doneMap && doneMap[i]), key = FLIP_IMG[it.n];
+    if (key) IMG["fl_"+key] = 2;
+    return `<div class="drill">${key ? mediaBox("fl_"+key, {name:it.n}) : ""}<button class="witem ${on?"on":""}" ${interactive?`data-act="flipd" data-v="${i}"`:"disabled"} aria-pressed="${on}"><span class="wcheck">${on?"✓":""}</span><span class="wtxt"><b>${it.n}</b> <span class="wdose">${it.d}</span><span class="whow">${it.how}</span></span></button></div>`; }).join("");
 }
 function flipBlockHtml(a){
   const F = flipState(), si = F.stage, st = FLIP[si];
