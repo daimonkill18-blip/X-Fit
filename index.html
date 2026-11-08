@@ -62,7 +62,7 @@ h1,h2,h3{margin:0;text-wrap:balance}
 input[type=number],input[type=text]{font:600 18px/1 var(--f-num);color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px;width:100%;min-height:46px;text-align:center}
 .weightform{display:grid;grid-template-columns:1fr auto;gap:10px}
 .tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);z-index:5}
-.tabs>div{display:grid;grid-template-columns:repeat(3,1fr);width:100%;max-width:560px}
+.tabs>div{display:grid;grid-template-columns:repeat(4,1fr);width:100%;max-width:560px}
 .tab{appearance:none;border:0;background:none;color:var(--muted);padding:10px 4px 12px;font:600 13px/1.2 var(--f-body);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px}
 .tab svg{width:22px;height:22px}
 .tab[aria-current="page"]{color:var(--accent)}
@@ -154,6 +154,9 @@ svg.anim .phase.eff{fill:var(--accent)}
 .wdose{font:600 14px var(--f-body);color:var(--accent)}
 .whow{font-size:14px;color:var(--muted)}
 .witem:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 60%,transparent)}
+.phases{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px}
+details summary{gap:8px}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
 .empty{padding:18px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}
 .guide p{margin:0 0 8px}
 .guide ul{margin:0 0 8px;padding-left:20px;display:flex;flex-direction:column;gap:4px}
@@ -231,9 +234,10 @@ const EX = {
   mistakes:["Переразгибание поясницы вверху","Рывки"]},
 };
 const W = {
- A:{title:"Ноги, спина, грудь, плечи",items:["warmup","leg_press","lat_pulldown","chest_press","leg_curl","lateral_raise","plank","cooldown"]},
- B:{title:"Присед, спина, грудь, руки",items:["warmup","goblet_squat","seated_row","incline_db_press","leg_extension","biceps_curl","triceps_pushdown","hyperextension","cooldown"]},
+ A:{title:"Ноги, спина, грудь, плечи",items:["warmup","flip","leg_press","lat_pulldown","chest_press","leg_curl","lateral_raise","plank","cooldown"]},
+ B:{title:"Присед, спина, грудь, руки",items:["warmup","flip","goblet_squat","seated_row","incline_db_press","leg_extension","biceps_curl","triceps_pushdown","hyperextension","cooldown"]},
 };
+EX.flip = {name:"Сальто-блок", type:"info", text:""};
 for (const k in EX) EX[k].id = k;
 const BEGINNER = 4;
 const DAYS = ["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
@@ -386,6 +390,7 @@ function finish(){
     else logs[id] = {status:"skipped", sets:[]};
   }
   const any = Object.values(logs).some(l=>l.status==="done");
+  if (a.flipDone && Object.values(a.flipDone).some(Boolean)){ const F = flipState(); F.sessions = (F.sessions||0) + 1; F.last = new Date().toISOString(); }
   if (any){
     S.sessions.push({id:Date.now().toString(36), w:a.w, date:new Date().toISOString(), logs});
     S.next = a.w==="A" ? "B" : "A";
@@ -429,6 +434,7 @@ function tick(){
 const icons = {
  home:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 10.5 12 3l9 7.5V21H3z"/><path d="M9 21v-6h6v6"/></svg>`,
  prog:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 20h18"/><path d="M5 16l5-5 4 3 6-7"/></svg>`,
+ flip:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 4a8 8 0 1 0 8 8"/><path d="M20 6v6h-6"/><circle cx="12" cy="12" r="2"/></svg>`,
  guide:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/><path d="M9 8h6"/></svg>`,
 };
 function header(sub){
@@ -436,7 +442,7 @@ function header(sub){
 }
 function tabsHtml(){
   const t = (k,l,i) => `<button class="tab" data-act="tab" data-v="${k}" ${tab===k||(k==="home"&&tab==="done")?'aria-current="page"':""}>${icons[i]}${l}</button>`;
-  return `<nav class="tabs"><div>${t("home","Сегодня","home")}${t("prog","Прогресс","prog")}${t("guide","Гид","guide")}</div></nav>`;
+  return `<nav class="tabs"><div>${t("home","Сегодня","home")}${t("flip","Сальто","flip")}${t("prog","Прогресс","prog")}${t("guide","Гид","guide")}</div></nav>`;
 }
 function render(){
   const app = document.getElementById("app");
@@ -445,6 +451,7 @@ function render(){
   if (tab==="done") body = renderDone();
   else if (tab==="prog") body = renderProg();
   else if (tab==="guide") body = renderGuide();
+  else if (tab==="flip") body = renderFlip();
   else body = renderHome();
   app.innerHTML = `<div class="wrap">${body}</div>${tabsHtml()}`;
 }
@@ -505,8 +512,10 @@ function renderWorkout(){
   const steps = `<div class="steps">${items.map((_,i)=>`<b class="${i<a.idx?"done":i===a.idx?"cur":""}"></b>`).join("")}</div>`;
   let main = "";
   if (ex.type==="info"){
-    main = id==="warmup"
-      ? `<section class="card"><div class="label">Шаг ${a.idx+1} из ${items.length} · ~10 минут</div><h2 class="exname">Разминка</h2>${warmupHtml(a)}</section>`
+    main = id==="flip"
+      ? `<section class="card"><div class="label">Шаг ${a.idx+1} из ${items.length} · ~10 минут</div>${flipBlockHtml(a)}</section>`
+      : id==="warmup"
+      ?`<section class="card"><div class="label">Шаг ${a.idx+1} из ${items.length} · ~10 минут</div><h2 class="exname">Разминка</h2>${warmupHtml(a)}</section>`
       : `<section class="card"><div class="label">Шаг ${a.idx+1} из ${items.length}</div><h2 class="exname">${ex.name}</h2><div class="guide">${ex.text}</div></section>`;
   } else {
     const last = lastLog(id), r = rec(ex, last), l = ensureLog(), isT = ex.type==="time";
@@ -543,6 +552,148 @@ function renderWorkout(){
     <button class="btn" data-act="skip">${ex.type==="info"?"Пропустить":"Пропуск"}</button>
     <button class="btn primary" data-act="next">${isLast?"Завершить":ex.type==="info"?"Готово →":"Дальше →"}</button>
   </div></div>`;
+}
+
+/* ======================= ЗАДНЕЕ САЛЬТО: этапы ======================= */
+const FLIP = [
+ {name:"Фундамент", where:"в X-FIT, на мате", weeks:"3–4 недели",
+  goal:"Мощный прыжок вверх, сильный пресс и спокойное отношение к кувырку назад.",
+  drills:[
+   {n:"Прыжок вверх с махом рук", d:"3 × 5", how:"Из полуприседа руки резко вниз-назад, затем мощно вверх над головой — и выпрыгивай строго ВВЕРХ, тянись к потолку. Приземление мягкое: носки → пятки, колени согнуты."},
+   {n:"Прыжок с подтягиванием коленей (tuck jump)", d:"3 × 5", how:"В высшей точке подтяни колени к груди и коснись голеней, сразу раскройся до приземления. Это и есть «группировка» для сальто."},
+   {n:"Лодочка на спине (hollow hold)", d:"3 × 20–30 с", how:"Лёжа на спине, поясница прижата к полу, плечи и прямые ноги приподняты на 15–20 см, руки за головой. Делает тело «жёстким» в воздухе."},
+   {n:"Подъём коленей к груди в висе", d:"3 × 8", how:"Вис на турнике, без раскачки подтягивай колени к груди и медленно опускай. Сила для быстрой группировки."},
+   {n:"Обратный кувырок на мате", d:"3 × 3", how:"Сядь на корточки, перекатись на спину, ладони у ушей пальцами к плечам, оттолкнись руками и перекатись через плечи в упор присев. Голову не поворачивай вбок."},
+   {n:"Мостик из положения лёжа", d:"3 × 10 с", how:"Лёжа на спине, ладони у ушей, стопы у таза. Выжми таз и грудь вверх. Готовит плечи и спину, учит не бояться прогиба."},
+  ],
+  tests:["5 tuck jump подряд — колени выше пояса","Лодочка 30 секунд без прогиба в пояснице","5 обратных кувырков ровно, без завала на бок","Прыжок с махом рук: уверенно и с мягким приземлением"]},
+ {name:"Вращение назад", where:"в X-FIT, на матах", weeks:"2–3 недели",
+  goal:"Быстро группироваться и вращаться назад без страха.",
+  drills:[
+   {n:"Tuck jump с удержанием группировки", d:"3 × 5", how:"Как на этапе 1, но задержись в группировке на долю секунды: колени к груди, руки обхватывают голени."},
+   {n:"Перекат назад из стойки", d:"3 × 5", how:"Стоя на мате, садись назад «как на стул», округли спину и перекатись на лопатки, колени к груди. Перекатом вернись вперёд. Тело привыкает к вращению назад."},
+   {n:"Быстрый обратный кувырок на стопы", d:"3 × 5", how:"Обратный кувырок с сильным толчком руками и быстрым приходом на стопы. Чем быстрее — тем лучше."},
+   {n:"Прыжок назад-вверх на стопку матов", d:"3 × 5 (если есть маты 60+ см)", how:"Встань спиной к высокой стопке матов. Мах руками, прыжок ВВЕРХ и немного назад, падай на спину на маты с поднятыми руками. Учит не бояться выпрыгивать назад. Нет матов — пропусти."},
+   {n:"Маховые прыжки «руки и грудь вверх»", d:"3 × 5", how:"Прыжок с махом рук, в верхней точке руки и грудь тянутся вверх-назад, взгляд вверх. Голову НЕ запрокидывай резко."},
+   {n:"Лодочка + «ракушка»", d:"3 подхода", how:"Лодочка 20 с, затем 5 перекатов на спине в группировке (колени к груди, руками держишь голени)."},
+  ],
+  tests:["Перекат назад из стойки — плавно 5 раз","Быстрый обратный кувырок на стопы","Tuck jump с удержанием группировки 5 раз","Не страшно падать назад на маты"]},
+ {name:"Сальто на батуте", where:"батутный центр или секция акробатики, с тренером", weeks:"3–6 занятий",
+  goal:"Сделать первое настоящее сальто назад — на мягкой поверхности и со страховкой.",
+  drills:[
+   {n:"Контроль прыжка на батуте", d:"5–10 мин", how:"Прыжки строго по центру, руки вверх, «стоп-прыжок» — гасишь прыжок, сгибая колени. Без контроля сальто не делаем."},
+   {n:"Падение на спину и возврат на ноги", d:"10 раз", how:"Из небольшого прыжка приземляйся на спину в группировке и пружиной возвращайся на ноги."},
+   {n:"Сальто назад со страховкой тренера", d:"5–10 раз", how:"Тренер держит за пояс и спину. Мах руками → прыжок ВВЕРХ → колени к груди → увидел батут → раскрылся."},
+   {n:"Сальто в поролоновую яму", d:"5–10 раз", how:"Если есть яма — отработай вращение без страха удариться."},
+   {n:"Сальто на батуте самостоятельно", d:"когда тренер разрешит", how:"Только после стабильных сальто со страховкой."},
+  ],
+  tests:["10 сальто на батуте со страховкой","5 чистых сальто на батуте самостоятельно","Приземляюсь на ноги, без падений на колени"]},
+ {name:"Сальто на полу", where:"зал акробатики / толстый мат, со страховщиком", weeks:"2–4 занятия",
+  goal:"Заднее сальто с места на твёрдой поверхности.",
+  drills:[
+   {n:"Сальто с возвышения на мат", d:"5–10 раз", how:"С мата высотой 30–40 см на толстый мат. Высота даёт запас на вращение."},
+   {n:"Сальто с пола на мат со страховкой", d:"5–10 раз", how:"Страховщик сбоку: одна рука на пояснице, другая подкручивает под бёдра."},
+   {n:"Сальто на мат без страховки", d:"5 раз", how:"Только когда страховщик уже почти не помогает."},
+   {n:"Сальто на ровной поверхности", d:"когда готов", how:"Сначала трава или мягкий ковёр. Устал — прекращай: большинство травм случаются на «последней попытке»."},
+  ],
+  tests:["5 сальто со страховкой — страховщик почти не помогает","3 сальто на мат без страховки","Первое сальто на ровной поверхности 🎉"]},
+];
+const FLIP_PHASES = [
+  ["Замах","Полуприсед, руки резко вниз-назад. Колени согнуты примерно на 90°, спина прямая."],
+  ["Выпрыгивание ВВЕРХ","Руки мощно вверх, полностью выпрямляешь ноги и выпрыгиваешь вертикально. Главная ошибка — прыгать назад: тогда не хватает высоты."],
+  ["Группировка","В самой высокой точке колени резко к груди, руки хватают голени. Чем плотнее группировка — тем быстрее вращение."],
+  ["Вращение","Держишь группировку. Голову не запрокидывай раньше времени — она идёт вместе с телом."],
+  ["Раскрытие","Как только увидел пол — отпускай колени и выпрямляйся под себя."],
+  ["Приземление","На носки → пятки, колени мягко сгибаются, руки вперёд для баланса."],
+];
+function flipState(){ S.flip = S.flip || {stage:0, tests:{}, sessions:0}; S.flip.tests = S.flip.tests || {}; return S.flip; }
+function flipTestsHtml(F, si, interactive){
+  const st = FLIP[si], t = F.tests[si] || {};
+  return st.tests.map((x,i)=>`<button class="witem ${t[i]?"on":""}" ${interactive?`data-act="flipt" data-v="${si}-${i}"`:"disabled"} aria-pressed="${!!t[i]}"><span class="wcheck">${t[i]?"✓":""}</span><span class="wtxt"><b>${x}</b></span></button>`).join("");
+}
+function drillsHtml(list, doneMap, interactive){
+  return list.map((it,i)=>{ const on = !!(doneMap && doneMap[i]);
+    return `<button class="witem ${on?"on":""}" ${interactive?`data-act="flipd" data-v="${i}"`:"disabled"} aria-pressed="${on}"><span class="wcheck">${on?"✓":""}</span><span class="wtxt"><b>${it.n}</b> <span class="wdose">${it.d}</span><span class="whow">${it.how}</span></span></button>`; }).join("");
+}
+function flipBlockHtml(a){
+  const F = flipState(), si = F.stage, st = FLIP[si];
+  const gymSi = Math.min(si, 1), gym = FLIP[gymSi];
+  const note = si >= 2 ? `<div class="tip up"><b>Ты на этапе ${si+1} — «${st.name}».</b> Само сальто тренируй ${st.where} 1 раз в неделю. В X-FIT поддерживай форму упражнениями этапа 2 ниже.</div>` : "";
+  return `<div class="row" style="gap:10px;align-items:center"><span class="plate sm A" style="--c:var(--accent)">${si+1}</span><h2 class="exname" style="margin:0">Сальто · этап ${si+1}</h2></div>
+    <p class="muted" style="margin:0;font-size:14px">«${gym.name}» — ${gym.goal} Делай сразу после разминки, пока свежий. Отдых между подходами 60–90 с. Качество важнее количества.</p>
+    ${note}
+    ${drillsHtml(gym.drills, a.flipDone, true)}
+    <button class="btn ghost" data-act="tab-flip">Этапы, тесты и техника сальто →</button>`;
+}
+function renderFlip(){
+  const F = flipState(), si = F.stage, st = FLIP[si], t = F.tests[si] || {};
+  const allOk = st.tests.every((_,i)=>t[i]);
+  const steps = FLIP.map((s,i)=>`<b class="${i<si?"done":i===si?"cur":""}"></b>`).join("");
+  return `${header("заднее сальто · с нуля")}
+  <section class="card">
+    <div class="label">Твой этап</div>
+    <div class="steps">${steps}</div>
+    <h2 class="exname">Этап ${si+1} из 4 · ${st.name}</h2>
+    <div class="target"><span class="pill">${st.where}</span><span class="pill">${st.weeks}</span><span class="pill">тренировок с сальто: ${F.sessions||0}</span></div>
+    <p style="margin:0">${st.goal}</p>
+    <h3 class="wtitle" style="margin-top:6px">Тест для перехода дальше</h3>
+    <p class="muted" style="margin:0;font-size:14px">Отмечай, когда получается стабильно — не один раз случайно.</p>
+    ${flipTestsHtml(F, si, true)}
+    ${si < 3 ? `<button class="btn ${allOk?"primary":""}" data-act="flip-next" ${allOk?"":"disabled"}>${allOk?`Перейти на этап ${si+2} →`:`Выполни все пункты теста, чтобы открыть этап ${si+2}`}</button>` : (allOk?`<div class="tip up"><b>Поздравляю — у тебя есть заднее сальто!</b> Поддерживай: 1–2 раза в месяц на мягком покрытии.</div>`:"")}
+    ${si > 0 ? `<button class="btn ghost" data-act="flip-prev">← вернуться на этап ${si}</button>` : ""}
+  </section>
+  <section class="card">
+    <div class="label">Как выглядит сальто</div>
+    <div class="animbox"><svg class="flipanim" viewBox="0 0 240 180" role="img" aria-label="Анимация заднего сальто по фазам"></svg></div>
+    <ol class="phases">${FLIP_PHASES.map(([h,d])=>`<li><b>${h}.</b> ${d}</li>`).join("")}</ol>
+  </section>
+  <section class="card">
+    <div class="label">Безопасность — обязательно</div>
+    <ul class="guide" style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px">
+      <li><b>Никогда не пробуй полное сальто на твёрдом полу, пока не прошёл этапы 3 и 4.</b> Недокрут = падение на голову и шею.</li>
+      <li>Первые сальто — только на батуте, в поролоновой яме или на толстых матах и <b>со страховкой тренера</b>. Ищи батутный центр или секцию акробатики / паркура в своём городе.</li>
+      <li>Всегда после разминки. Устал, болит шея, спина или запястья — в этот день сальто не делаешь.</li>
+      <li>Не тренируй сальто чаще 2–3 раз в неделю: связкам нужно восстанавливаться.</li>
+      <li>Страх — нормально. Он уходит с этапами, а не через «просто прыгни».</li>
+    </ul>
+  </section>
+  <section class="card">
+    <div class="label">Все этапы</div>
+    ${FLIP.map((s,i)=>`<details ${i===si?"open":""}><summary>Этап ${i+1} · ${s.name} <span class="muted" style="font-weight:500;font-size:13px;margin-left:auto;margin-right:10px">${i<si?"пройден ✓":s.weeks}</span></summary>
+      <p style="margin:6px 0">${s.goal} <span class="muted">Где: ${s.where}.</span></p>
+      <div style="display:flex;flex-direction:column;gap:8px">${drillsHtml(s.drills, null, false)}</div>
+      <h4 class="label" style="margin:12px 0 6px">Тест</h4><div style="display:flex;flex-direction:column;gap:8px">${flipTestsHtml(F, i, false)}</div>
+    </details>`).join("")}
+  </section>`;
+}
+
+/* анимация сальто: ключевые позы + поворот всего тела вокруг таза */
+const FK = [
+  {d:.7, p:{hip:[120,82], t:-90, leg:{th:90,sh:90}, arm:{ua:180,fa:180}, foot:-90, r:0}, ph:"стойка"},
+  {d:.55,p:{hip:[116,108],t:-58, leg:{th:37,sh:137}, arm:{ua:215,fa:210}, foot:-137, r:0}, ph:"замах"},
+  {d:.26,p:{hip:[120,74], t:-95, leg:{th:92,sh:92}, arm:{ua:-10,fa:-8}, foot:0, r:0}, ph:"прыжок вверх"},
+  {d:.34,p:{hip:[118,38], t:-90, leg:{th:-15,sh:95}, arm:{ua:115,fa:175}, foot:-90, r:-150}, ph:"группировка"},
+  {d:.3, p:{hip:[117,42], t:-90, leg:{th:-15,sh:95}, arm:{ua:115,fa:175}, foot:-90, r:-265}, ph:"вращение"},
+  {d:.3, p:{hip:[120,66], t:-90, leg:{th:92,sh:88}, arm:{ua:95,fa:95}, foot:-90, r:-335}, ph:"раскрытие"},
+  {d:.28,p:{hip:[118,104],t:-68, leg:{th:40,sh:133}, arm:{ua:95,fa:90}, foot:-133, r:-360}, ph:"приземление"},
+  {d:.6, p:{hip:[120,82], t:-90, leg:{th:90,sh:90}, arm:{ua:180,fa:180}, foot:-90, r:-360}, ph:"стойка"},
+];
+function flipFrame(time){
+  // сегмент i: переход FK[i] → FK[i+1] за FK[i+1].d секунд; в начале пауза в стойке 0.7 с
+  const HOLD = .7, segs = FK.slice(1).map(k=>k.d), total = HOLD + segs.reduce((s,d)=>s+d,0);
+  let t = (time/1000) % total, p, label;
+  if (t < HOLD){ p = FK[0].p; label = "стойка"; }
+  else {
+    t -= HOLD; let i = 0; while (i < segs.length-1 && t > segs[i]){ t -= segs[i]; i++; }
+    const A = FK[i], B = FK[i+1], ground = i===0 || i>=5;
+    let k = Math.min(t / segs[i], 1); if (ground) k = ease(k);
+    p = mix(A.p, B.p, k); label = B.ph;
+  }
+  const P = solve(p);
+  const isEff = ["прыжок вверх","группировка","замах"].includes(label);
+  return FLOOR + `<path d="M150 64 A40 40 0 1 0 104 28" fill="none" class="soft" stroke-width="2" stroke-dasharray="4 5"/><path d="M104 28 l2 -9 l7 6 z" class="machf" opacity=".5"/>`
+    + `<g transform="rotate(${p.r.toFixed(1)} ${P.hip[0].toFixed(1)} ${P.hip[1].toFixed(1)})">${body(P, [])}</g>`
+    + `<text x="120" y="174" text-anchor="middle" class="phase ${isEff?"eff":""}">${label}</text>`;
 }
 
 /* ---------- разминка: 4 блока, отмечаешь галочками ---------- */
@@ -742,6 +893,11 @@ document.addEventListener("click", e => {
   else if (act==="timer-off"){ stopTimer(); }
   else if (act==="delbody"){ S.body.pop(); save(); render(); }
   else if (act==="wtab"){ wTab = v; render(); }
+  else if (act==="flipd"){ const a = S.active; a.flipDone = a.flipDone || {}; a.flipDone[v] = !a.flipDone[v]; save(); const y = scrollY; render(); scrollTo(0, y); }
+  else if (act==="flipt"){ const F = flipState(), [si, i] = v.split("-"); F.tests[si] = F.tests[si] || {}; F.tests[si][i] = !F.tests[si][i]; save(); const y = scrollY; render(); scrollTo(0, y); }
+  else if (act==="flip-next"){ const F = flipState(); if (F.stage < 3){ F.stage++; save(); render(); scrollTo(0,0); toast(`Этап ${F.stage+1} открыт 💪`); } }
+  else if (act==="flip-prev"){ const F = flipState(); if (F.stage > 0){ F.stage--; save(); render(); scrollTo(0,0); } }
+  else if (act==="tab-flip"){ toast("Вкладка «Сальто» — внизу экрана, после тренировки"); }
   else if (act==="warm"){ const a = S.active; a.warm = a.warm || {}; a.warm[v] = !a.warm[v]; save(); const y = scrollY; render(); scrollTo(0, y); }
   else if (act==="warm-timer"){ startTimer(+v, "кардио", "Кардио готово — переходи к суставной разминке"); }
   else if (act==="pause"){ animPaused = !animPaused; b.textContent = animPaused ? "▶" : "❚❚"; b.setAttribute("aria-label", animPaused ? "Запустить" : "Пауза"); }
@@ -963,6 +1119,7 @@ function animLoop(now){
   lastNow = now;
   const vis = el => { const r = el.getBoundingClientRect(); return r.height && r.bottom > 0 && r.top < innerHeight; };
   for (const el of document.querySelectorAll("svg.anim")){ if (vis(el)) el.innerHTML = frame(el.dataset.ex, animClock); }
+  for (const el of document.querySelectorAll("svg.flipanim")){ if (vis(el)) el.innerHTML = flipFrame(animClock); }
   for (const el of document.querySelectorAll(".media")){
     if (!vis(el)) continue;
     const a = ANIM[el.dataset.ex] || {eff:"AB"}, fb = el.querySelector(".fb"), ph = el.querySelector(".mphase");
